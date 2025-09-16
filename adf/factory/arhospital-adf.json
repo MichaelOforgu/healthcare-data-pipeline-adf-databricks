@@ -1,0 +1,9 @@
+{
+	"name": "arhospital-adf",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "812691bc-b1ae-4ee8-9968-4c3c43892855",
+		"tenantId": "22375461-03ae-40f7-b2a8-38b97f5994e8"
+	}
+}

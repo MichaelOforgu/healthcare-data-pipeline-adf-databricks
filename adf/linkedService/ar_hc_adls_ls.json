@@ -1,0 +1,19 @@
+{
+	"name": "ar_hc_adls_ls",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "https://aradlsdev.dfs.core.windows.net/",
+			"accountKey": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ar_hc_kv_ls",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "ar-adls-access-key-dev"
+			}
+		}
+	}
+}
