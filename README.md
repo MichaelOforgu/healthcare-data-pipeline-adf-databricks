@@ -15,8 +15,8 @@ The goal is to build a unified, reliable analytics solution for hospital revenue
 - **Star schema** in Gold layer with **Fact**/**Dim** tables for RCM KPIs
 - **Azure Key Vault** secrets integration and **Unity Catalog** governance
 - **ADF** orchestration with **ForEach** parallelization and retries
-
 ---
+<br>
 
 ## 🗺️ Solution Architecture
 
@@ -39,6 +39,7 @@ The goal is to build a unified, reliable analytics solution for hospital revenue
 
 
 ---
+<br>
 
 ## Key Features
 - **Azure Data Factory**: Orchestrates ingestion, applies incremental/full-load logic using metadata-driven config files.
@@ -65,7 +66,7 @@ The goal is to build a unified, reliable analytics solution for hospital revenue
 
 - **ICD Data (Public API)**: Standardized diagnosis codes, mapped for analytics.
 
-⚠️ **Note**: Data is generated using `faker`; some joins will not match perfectly and API pulls are intentionally sparse.
+⚠️ **Note**: Data is generated using `faker`.
 
 ---
 
@@ -100,6 +101,7 @@ ar-hospital-b,hos-b,dbo.departments,Full,,1,hosb
 ```
 
 ---
+<br>
 
 ## 🧩 Repository structure
 ```
@@ -167,8 +169,9 @@ adls_key = dbutils.secrets.get('hc-kv-scope', 'adls-access-key-dev')
 <img width="1628" height="516" alt="image" src="https://github.com/user-attachments/assets/5568f77a-c815-4f74-acb8-964a907ecd9b" />
 
 ---
+<br>
 
-## 🏗️ Orchestration (ADF)
+## Orchestration (ADF)
 
 ### Linked Services
 - Azure SQL DB
@@ -185,7 +188,7 @@ adls_key = dbutils.secrets.get('hc-kv-scope', 'adls-access-key-dev')
 The datasets are the “connectors” the pipelines reuse for every entity. By keeping them generic and parameterized, the ForEach loop can swap sources/sinks at runtime based on the config file—no new datasets per table.
 
 <img width="1589" height="461" alt="image" src="https://github.com/user-attachments/assets/14e99de6-2867-466d-901e-0d1d49a8292f" />
-
+<br><br>
 
 ## Pipeline pattern
 - **pl_emr_src_to_landing**: Config-driven ADF ingestion. Reads load_config.csv, loops entities, archives existing files, runs full or incremental (watermark) loads from Azure SQL/landing to Bronze Parquet, and writes to audit.load_logs. Parallel enabled.
@@ -245,15 +248,37 @@ CREATE TABLE IF NOT EXISTS ar_hos_adb_ws.audit.load_logs (
 > Swap `Incremental_Load_CP` with `Full_Load_CP` in the full‑load branch.
 
 ---
+<br>
 
 ## 🧱 Bronze → Silver (Databricks)
 
 **Goals**: clean, conform to a **Common Data Model (CDM)**, apply **quality checks**, and implement **SCD2** on change‑tracking dims.
 
 ### Quality checks & quarantine
-- Null checks, domain checks, referential checks
+- I performed Null checks
 - Add flags: `is_quarantined BOOLEAN`, `dq_fail_reason STRING`
 - Quarantined rows persist in Silver but are excluded from Gold
+
+### Common Data Model (CDM) standardization
+
+To make multi-hospital data joinable, each domain is conformed to a shared schema in Silver. Column names and types are aligned, enumerations normalized (e.g., Gender), dates cast, and a stable business key is created per record. We also keep source lineage via datasource and SRC_ModifiedDate.
+
+Example — Patients CDM view
+```sql
+CREATE OR REPLACE TEMP VIEW cdm_patients AS
+SELECT CONCAT(SRC_PatientID,'_', datasource) AS Patient_Key, * 
+FROM (
+    SELECT PatientID AS SRC_PatientID, FirstName, LastName, MiddleName, SSN, PhoneNumber,
+           Gender, DOB, Address, ModifiedDate AS SRC_ModifiedDate, datasource
+    FROM patients_hosa
+    UNION ALL
+    SELECT ID AS SRC_PatientID, F_Name AS FirstName, L_Name AS LastName, M_Name AS MiddleName,
+           SSN, PhoneNumber, Gender, DOB, Address, Updated_Date AS SRC_ModifiedDate, datasource
+    FROM patients_hosb
+);
+```
+
+**Why it matters**: once conformed, downstream SCD2 merges use Patient_Key and the same attribute set across sources, enabling consistent Dims/Facts construction and simpler analytics.
 
 ### SCD Type 2 template (MERGE)
 ```sql
@@ -296,6 +321,7 @@ VALUES (
 ```
 
 ---
+<br>
 
 ## ⭐ Silver → Gold (Star schema)
 
@@ -311,10 +337,11 @@ VALUES (
 - `fact_transactions`
 
 ---
+<br>
 
 ## 🧭 Unity Catalog
-- Moved from local Hive metastore → **Unity Catalog** (`catalog.schema.table`)
-- Example naming: `ar_hos_adb_ws.silver.patients`, `ar_hos_adb_ws.gold.fact_transaction`
+- I implimented **Unity Catalog** (`catalog.schema.table`)
+- Sample naming: `ar_hos_adb_ws.silver.patients`, `ar_hos_adb_ws.gold.fact_transaction`
 - Managed permissions per workspace/group; enable lineage
 
 <img width="1631" height="823" alt="image" src="https://github.com/user-attachments/assets/dedf63bb-e8a5-49da-b50d-af7f63d2919d" />
