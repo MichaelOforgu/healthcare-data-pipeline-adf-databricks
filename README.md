@@ -20,7 +20,8 @@ The goal is to build a unified, reliable analytics solution for hospital revenue
 
 ## 🗺️ Solution Architecture
 
-<img width="1178" height="693" alt="project_architecture" src="https://github.com/user-attachments/assets/fdc30b55-18e1-4c10-8c9b-406533c40f0b" />
+<img width="1758" height="1006" alt="image" src="https://github.com/user-attachments/assets/30215b28-04c3-4f92-9e69-06e208ba42bc" />
+
 <br>
 
 - **Landing** → raw drops (CSV, JSON)
@@ -35,7 +36,6 @@ The goal is to build a unified, reliable analytics solution for hospital revenue
 2. ADF **Lookup** (config) → **ForEach** (per entity) → **Copy** (to Bronze Parquet) → **Audit log**
 3. Databricks **Bronze → Silver** (clean/CDM/SCD2/quarantine)
 4. Databricks **Silver → Gold** (Facts/Dimensions)
-5. BI/ML consumers hit **Gold**/**Silver** respectively
 
 
 ---
@@ -303,15 +303,12 @@ VALUES (
 - `dim_patient` (SCD2)
 - `dim_provider` (full refresh)
 - `dim_department` (full refresh)
-- `dim_date`
-- `dim_payer` / `dim_plan`
-- `dim_cpt`, `dim_icd`, `dim_npi`
+- `dim_cpt_code` (SCD2)
+- `dim_icd` (SCD2)
+- `dim_npi` (SCD2)
 
 ### Facts
-- `fact_encounter`
 - `fact_transactions`
-- `fact_claim`
-- `fact_ar` (daily snapshot of outstanding receivables)
 
 ---
 
